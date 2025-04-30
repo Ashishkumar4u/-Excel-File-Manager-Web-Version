@@ -2,85 +2,69 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Excel File Manager</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   <style>
-    body {
-      background-color: #000000;
-      color: white;
-    }
-
+    body { background-color: #000000; color: white; }
     .neon-border {
-      position: relative;
-      border-radius: 1rem;
-      background-color: #0f172a;
-      padding: 1.5rem;
-      border: 2px solid;
+      position: relative; border-radius: 1rem; background-color: #0f172a;
+      padding: 1.5rem; border: 2px solid;
       border-image: linear-gradient(90deg, #ff00cc, #3333ff, #00ffcc) 1;
     }
-
-    /* Splash screen styles */
     #splash-screen {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: linear-gradient(-45deg, #ff00cc, #3333ff, #00ffcc, #ff00cc);
-      background-size: 400% 400%;
-      animation: gradientBG 8s ease infinite;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
+      background-size: 400% 400%; animation: gradientBG 8s ease infinite;
+      display: flex; align-items: center; justify-content: center; z-index: 50;
     }
-
     #splash-screen h1 {
-      font-size: 3rem;
-      font-weight: bold;
+      font-size: 3rem; font-weight: bold;
       background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffcc);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       animation: pulseText 2s ease-in-out infinite;
     }
-
     @keyframes gradientBG {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-
     @keyframes pulseText {
       0%, 100% { transform: scale(1); opacity: 1; }
       50% { transform: scale(1.1); opacity: 0.8; }
     }
-
-    /* Custom search bar style */
-    #search-bar {
-      transition: all 0.3s ease-in-out;
-    }
-
     #search-bar:focus {
       outline: none;
       box-shadow: 0 0 15px #00ffff;
       border-color: #00ffff;
     }
+    .highlight-yellow {
+      background-color: yellow !important;
+      color: black !important;
+    }
+    .delete-btn {
+      opacity: 0;
+      transition: all 0.2s ease;
+    }
+    tr:hover .delete-btn {
+      opacity: 1;
+    }
+    .delete-btn svg {
+      transition: all 0.2s ease;
+    }
+    .delete-btn:hover svg {
+      stroke: #dc2626 !important;
+      transform: scale(1.1);
+    }
   </style>
 </head>
 <body class="text-white min-h-screen">
-
-<!-- Splash Screen -->
-<div id="splash-screen">
-  <h1>Made by Ashish</h1>
-</div>
-
+<div id="splash-screen"><h1>Made by Ashish</h1></div>
 <div class="max-w-7xl mx-auto p-6 space-y-8" style="display: none;" id="main-content">
-
-  <!-- Upload + Search + Add Section -->
   <section class="neon-border flex flex-col md:flex-row md:space-x-6 items-center justify-center space-y-4 md:space-y-0">
-    <!-- Upload -->
     <div class="flex flex-col items-center w-full sm:w-auto">
       <input type="file" id="file-upload" class="hidden" />
       <label for="file-upload" class="cursor-pointer bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-3 px-6 rounded-full text-base font-semibold text-center w-full">
@@ -88,30 +72,24 @@
       </label>
       <p id="upload-status" class="text-gray-300 text-xs mt-2 text-center">No file uploaded</p>
     </div>
-
-    <!-- Search -->
     <div class="flex flex-col items-center w-full md:w-1/2">
-      <input type="text" id="search-bar" placeholder="Search data..." class="w-full px-4 py-3 rounded-full bg-gray-800 text-white placeholder-gray-400 border border-cyan-400">
+      <input type="text" id="search-bar" placeholder="Search roll numbers (comma-separated)..." class="w-full px-4 py-3 rounded-full bg-gray-800 text-white placeholder-gray-400 border border-cyan-400">
     </div>
-
-    <!-- Add Selected -->
     <div class="flex flex-col items-center w-full sm:w-auto">
-      <button id="add-selected" class="bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white py-3 px-6 rounded-full font-semibold disabled:opacity-50 w-full" disabled>
-        Add Row
+      <button id="add-selected" class="bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white py-3 px-6 rounded-full font-semibold disabled:opacity-50 w-full">
+        Add Rows
       </button>
     </div>
   </section>
 
-  <!-- Uploaded Excel Data -->
   <section class="neon-border">
-    <h2 class="text-2xl font-bold text-cyan-400 mb-4">Uploaded Excel Data</h2>
+    <h2 class="text-2xl font-bold text-cyan-400 mb-4">Uploaded Data</h2>
     <div id="table-container" class="overflow-auto h-72 bg-gray-800 rounded-lg p-4"></div>
   </section>
 
-  <!-- New Excel Table -->
   <section class="neon-border">
     <div class="flex justify-between items-center mb-4 flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-      <h2 class="text-2xl font-bold text-purple-400">New Excel Table (Selected Rows)</h2>
+      <h2 class="text-2xl font-bold text-purple-400">New Excel Table </h2>
       <div class="flex flex-wrap gap-3">
         <button id="export-excel" class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-full font-semibold">Export Excel</button>
         <button id="export-pdf" class="bg-pink-500 hover:bg-pink-600 text-white py-2 px-4 rounded-full font-semibold">Export PDF</button>
@@ -119,46 +97,38 @@
     </div>
     <div class="overflow-auto h-72 bg-gray-800 rounded-lg p-4" id="new-table-container"></div>
   </section>
-
 </div>
 
 <script>
-  // SPLASH SCREEN LOGIC
   window.addEventListener("load", () => {
     setTimeout(() => {
       document.getElementById("splash-screen").style.display = "none";
       document.getElementById("main-content").style.display = "block";
-    }, 3000); // Display splash for 3 seconds
+    }, 3000);
   });
 
-  // BASIC FUNCTIONALITY
-  let originalData = [];
-  let headerRow = [];
-  let newTableData = [];
-  let matchedRowIndex = -1;
+  let originalData = [], headerRow = [], newTableData = [];
 
   document.getElementById("file-upload").addEventListener("change", handleFile);
-  document.getElementById("search-bar").addEventListener("input", handleSearch);
-  document.getElementById("add-selected").addEventListener("click", addSelectedRow);
+  document.getElementById("add-selected").addEventListener("click", addSelectedRows);
   document.getElementById("export-excel").addEventListener("click", exportExcel);
   document.getElementById("export-pdf").addEventListener("click", exportPDF);
+  document.getElementById("search-bar").addEventListener("input", () => renderTable());
 
   function handleFile(event) {
     const file = event.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = function (e) {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const sheetData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
       if (sheetData.length) {
         headerRow = sheetData[0];
         originalData = sheetData;
         newTableData = [];
-        renderTable(originalData);
+        renderTable();
         renderNewTable();
         document.getElementById("upload-status").textContent = `Uploaded: ${file.name}`;
       }
@@ -166,112 +136,135 @@
     reader.readAsArrayBuffer(file);
   }
 
-  function renderTable(data, highlightIndex = -1) {
+  function renderTable() {
     const container = document.getElementById("table-container");
     container.innerHTML = "";
-
     const table = document.createElement("table");
     table.className = "min-w-full text-sm text-gray-300";
 
-    const newData = [...data];
-    if (highlightIndex > 0) {
-      const matchedRow = newData.splice(highlightIndex, 1)[0];
-      newData.splice(1, 0, matchedRow);
+    const input = document.getElementById("search-bar").value.toLowerCase();
+    const queries = input.split(",").map(q => q.trim()).filter(q => q);
+
+    // Organize data with matches first
+    const organizedData = [];
+    if (originalData.length > 0) {
+      organizedData.push(originalData[0]); // Header
+      const matches = [];
+      const nonMatches = [];
+
+      originalData.slice(1).forEach(row => {
+        const isMatch = queries.some(q => 
+          row.some(cell => String(cell).toLowerCase().includes(q))
+        );
+        isMatch ? matches.push(row) : nonMatches.push(row);
+      });
+
+      organizedData.push(...matches, ...nonMatches);
     }
 
-    newData.forEach((row, index) => {
+    organizedData.forEach((row, index) => {
       const tr = document.createElement("tr");
-      tr.className = index === 0 ? "bg-cyan-700 font-bold" : "hover:bg-gray-700";
-      if (index === 1 && highlightIndex > 0) {
-        tr.classList.add("bg-pink-500");
+      tr.className = index === 0 ? "bg-cyan-700 font-bold" : "hover:bg-gray-700 cursor-pointer";
+      
+      if (index !== 0) {
+        tr.addEventListener('dblclick', () => {
+          if (!newTableData.some(r => JSON.stringify(r) === JSON.stringify(row))) {
+            if (newTableData.length === 0) newTableData.push(headerRow);
+            newTableData.push(row);
+            renderNewTable();
+          }
+        });
       }
+
       row.forEach(cell => {
         const cellElement = index === 0 ? document.createElement("th") : document.createElement("td");
         cellElement.className = "border border-gray-600 px-3 py-2";
         cellElement.textContent = cell;
+
+        if (index !== 0 && queries.some(q => 
+          String(cell).toLowerCase().includes(q)
+        )) {
+          cellElement.classList.add("highlight-yellow");
+        }
+
         tr.appendChild(cellElement);
       });
-      tr.addEventListener('dblclick', () => addRowToNewTable(index));
       table.appendChild(tr);
     });
-
     container.appendChild(table);
   }
 
-  function handleSearch(e) {
-    const searchText = e.target.value.toLowerCase();
-    matchedRowIndex = -1;
-    document.getElementById("add-selected").disabled = true;
+  function addSelectedRows() {
+    const input = document.getElementById("search-bar").value.toLowerCase();
+    const queries = input.split(",").map(q => q.trim()).filter(q => q);
+    if (!queries.length) return;
 
-    if (!searchText) {
-      renderTable(originalData);
-      return;
-    }
+    const matched = originalData.slice(1).filter(row => 
+      queries.some(q => row.some(cell => String(cell).toLowerCase().includes(q)))
+    );
 
-    for (let i = 1; i < originalData.length; i++) {
-      if (originalData[i].some(cell => String(cell).toLowerCase().includes(searchText))) {
-        matchedRowIndex = i;
-        break;
+    if (newTableData.length === 0) newTableData.push(headerRow);
+    matched.forEach(row => {
+      if (!newTableData.some(r => JSON.stringify(r) === JSON.stringify(row))) {
+        newTableData.push(row);
       }
-    }
-
-    renderTable(originalData, matchedRowIndex);
-    if (matchedRowIndex !== -1) {
-      document.getElementById("add-selected").disabled = false;
-    }
-  }
-
-  function addSelectedRow() {
-    if (matchedRowIndex !== -1) {
-      const rowToAdd = originalData[matchedRowIndex];
-      if (!newTableData.some(r => JSON.stringify(r) === JSON.stringify(rowToAdd))) {
-        if (newTableData.length === 0) newTableData.push(headerRow);
-        newTableData.push(rowToAdd);
-        renderNewTable();
-      }
-      document.getElementById("search-bar").value = "";
-      matchedRowIndex = -1;
-      document.getElementById("add-selected").disabled = true;
-      renderTable(originalData);
-    }
-  }
-
-  function addRowToNewTable(index) {
-    const rowToAdd = originalData[index];
-    if (!newTableData.some(r => JSON.stringify(r) === JSON.stringify(rowToAdd))) {
-      if (newTableData.length === 0) newTableData.push(headerRow);
-      newTableData.push(rowToAdd);
-      renderNewTable();
-    }
+    });
+    renderNewTable();
   }
 
   function renderNewTable() {
     const container = document.getElementById("new-table-container");
     container.innerHTML = "";
-
     const table = document.createElement("table");
     table.className = "min-w-full text-sm text-gray-300";
-
-    newTableData.forEach((row, index) => {
-      const tr = document.createElement("tr");
-      tr.className = index === 0 ? "bg-purple-700 font-bold" : "hover:bg-purple-600";
-      row.forEach(cell => {
-        const cellElement = index === 0 ? document.createElement("th") : document.createElement("td");
-        cellElement.className = "border border-gray-600 px-3 py-2";
-        cellElement.textContent = cell;
-        tr.appendChild(cellElement);
+    
+    if (newTableData.length > 0) {
+      const headerTr = document.createElement("tr");
+      headerTr.className = "bg-purple-700 font-bold";
+      newTableData[0].forEach(cell => {
+        const th = document.createElement("th");
+        th.className = "border border-gray-600 px-3 py-2";
+        th.textContent = cell;
+        headerTr.appendChild(th);
       });
-      table.appendChild(tr);
-    });
+      table.appendChild(headerTr);
 
+      newTableData.slice(1).forEach((row, index) => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-purple-600 relative";
+        
+        row.forEach((cell, cellIndex) => {
+          const td = document.createElement("td");
+          td.className = "border border-gray-600 px-3 py-2 relative group";
+          td.textContent = cell;
+          
+          if (cellIndex === row.length - 1) {
+            const deleteBtn = document.createElement("button");
+            deleteBtn.innerHTML = `
+              <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            `;
+            deleteBtn.className = "delete-btn absolute right-2 top-1/2 -translate-y-1/2";
+            deleteBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              newTableData.splice(index + 1, 1);
+              renderNewTable();
+            });
+            td.appendChild(deleteBtn);
+          }
+          
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+    }
     container.appendChild(table);
   }
 
   function exportExcel() {
-    if (newTableData.length <= 1) {
-      alert("No selected rows to export!");
-      return;
-    }
+    if (newTableData.length <= 1) return alert("No selected rows to export!");
     const worksheet = XLSX.utils.aoa_to_sheet(newTableData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "SelectedRows");
@@ -279,18 +272,12 @@
   }
 
   function exportPDF() {
-    if (newTableData.length <= 1) {
-      alert("No selected rows to export!");
-      return;
-    }
+    if (newTableData.length <= 1) return alert("No selected rows to export!");
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const col = newTableData[0];
     const rows = newTableData.slice(1);
-    doc.autoTable({
-      head: [col],
-      body: rows
-    });
+    doc.autoTable({ head: [col], body: rows });
     doc.save("selected_rows.pdf");
   }
 </script>
